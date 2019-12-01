@@ -1,20 +1,20 @@
 {
-  "name": "npm-library-template",
+  "name": "cartesian-composition",
   "version": "1.0.0",
-  "description": "NPM library template",
+  "description": "A higher order function to compose functions through cartesian composition.",
   "keywords": [
-    "npm",
-    "library",
-    "template"
+    "composition",
+    "functional-programming",
+    "composite",
+    "cartesian-composition"
   ],
   "author": "Anton Bagdatyev (Tonix-Tuft)",
   "license": "MIT",
   "main": "./dist/index.js",
-  "module": "./dist/index.es6.js",
-  "types": "./dist/index.d.ts",
+  "module": "./src/index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/tonix-tuft/npm-library-template.git"
+    "url": "https://github.com/tonix-tuft/cartesian-composition.git"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -25,14 +25,18 @@
     "@typescript-eslint/eslint-plugin": "^2.9.0",
     "@typescript-eslint/parser": "^2.9.0",
     "eslint": "^6.7.2",
+    "js-utl": "^1.2.0",
     "terser-webpack-plugin": "^1.4.1",
     "typescript": "^3.7.2",
     "uglifyjs-webpack-plugin": "^2.2.0",
     "webpack": "^4.41.2",
     "webpack-cli": "^3.3.10"
   },
-  "bugs": {
-    "url": "https://github.com/tonix-tuft/npm-library-template/issues"
+  "peerDependencies": {
+    "js-utl": "^1.2.0"
   },
-  "homepage": "https://github.com/tonix-tuft/npm-library-template#readme"
+  "bugs": {
+    "url": "https://github.com/tonix-tuft/cartesian-composition/issues"
+  },
+  "homepage": "https://github.com/tonix-tuft/cartesian-composition#readme"
 }

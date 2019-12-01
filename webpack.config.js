@@ -1,7 +1,7 @@
 const webpack = require("webpack");
-const libraryName = "npm-library-template";
+const libraryName = "cartesian-composition";
 let outputFile;
-const library = "NPMLibraryTemplate";
+const library = "cartesianComposition";
 const srcEntryPoint = "index.js";
 const path = require("path");
 
