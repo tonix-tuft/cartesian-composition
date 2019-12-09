@@ -1,6 +1,6 @@
 {
   "name": "cartesian-composition",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A higher order function to compose functions through cartesian composition.",
   "keywords": [
     "composition",
@@ -25,7 +25,6 @@
     "@typescript-eslint/eslint-plugin": "^2.10.0",
     "@typescript-eslint/parser": "^2.10.0",
     "eslint": "^6.7.2",
-    "js-utl": "^1.2.0",
     "serialize-javascript": "^2.1.2",
     "terser-webpack-plugin": "^1.4.2",
     "typescript": "^3.7.3",
@@ -33,7 +32,7 @@
     "webpack": "^4.41.2",
     "webpack-cli": "^3.3.10"
   },
-  "peerDependencies": {
+  "dependencies": {
     "js-utl": "^1.2.0"
   },
   "bugs": {
