@@ -32,7 +32,7 @@ import {
   hasNestedPropertyValue,
   compose,
   isArray,
-  uniqueProgressiveIncrementalCombinations,
+  yieldUniqueProgressiveIncrementalCombinations,
   areArrayItemsAllCoercibleToNumber
 } from "js-utl";
 
@@ -530,7 +530,7 @@ const cartesianComposition = (...args) => (...params) => {
       }
       const compositionRes = composeRes(currentPath);
       ret.push(compositionRes);
-      const optionalsCombinations = uniqueProgressiveIncrementalCombinations(
+      const optionalsCombinations = yieldUniqueProgressiveIncrementalCombinations(
         optionals
       );
       for (const optionalsCombination of optionalsCombinations) {
