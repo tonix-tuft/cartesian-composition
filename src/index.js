@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Anton Bagdatyev (Tonix)
+ * Copyright (c) 2021 Anton Bagdatyev (Tonix)
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -33,7 +33,7 @@ import {
   compose,
   isArray,
   yieldUniqueProgressiveIncrementalCombinations,
-  areArrayItemsAllCoercibleToNumber
+  areArrayItemsAllCoercibleToNumber,
 } from "js-utl";
 
 /**
@@ -389,171 +389,174 @@ import {
  * @return {Function} The cartesian composition function which, if called, will return an array of the results of the cartesian composition.
  *                    An empty array will be returned when calling the returned function if this function is called with an empty array.
  */
-const cartesianComposition = (...args) => (...params) => {
-  const l = args.length;
-  if (!l) {
-    return [];
-  }
-  const ret = [];
-  const stack = [];
-  const optionsPaddingArrayMap = {};
-  const alreadyVisitedOptionsMap = {};
-  const alreadyVisitedCompositionOfFunctionsOptionsMap = {};
-  const alreadyComposedPathsMap = {};
+const cartesianComposition =
+  (...args) =>
+  (...params) => {
+    const l = args.length;
+    if (!l) {
+      return [];
+    }
+    const ret = [];
+    const stack = [];
+    const optionsPaddingArrayMap = {};
+    const alreadyVisitedOptionsMap = {};
+    const alreadyVisitedCompositionOfFunctionsOptionsMap = {};
+    const alreadyComposedPathsMap = {};
 
-  const addToStack = (argIndex, path = []) => {
-    const arg = args[argIndex];
-    const l = arg.length;
-    for (let i = l - 1; i >= 0; i--) {
-      const possibleFn = arg[i];
-      const possibleFnIsArray = isArray(possibleFn);
-      if (
-        i === 0 &&
-        possibleFnIsArray &&
-        areArrayItemsAllCoercibleToNumber(possibleFn)
-      ) {
-        // Options padding array (it's always the first and it's an array).
-        if (!alreadyVisitedOptionsMap[argIndex]) {
-          const options = possibleFn;
-          for (const option of options) {
-            optionsPaddingArrayMap[argIndex] = optionsPaddingArrayMap[
-              argIndex
-            ] || {
-              optionsMap: {},
-              specificComposition: {}
-            };
-            optionsPaddingArrayMap[argIndex].optionsMap[option] = true;
+    const addToStack = (argIndex, path = []) => {
+      const arg = args[argIndex];
+      const l = arg.length;
+      for (let i = l - 1; i >= 0; i--) {
+        const possibleFn = arg[i];
+        const possibleFnIsArray = isArray(possibleFn);
+        if (
+          i === 0 &&
+          possibleFnIsArray &&
+          areArrayItemsAllCoercibleToNumber(possibleFn)
+        ) {
+          // Options padding array (it's always the first and it's an array).
+          if (!alreadyVisitedOptionsMap[argIndex]) {
+            const options = possibleFn;
+            for (const option of options) {
+              optionsPaddingArrayMap[argIndex] = optionsPaddingArrayMap[
+                argIndex
+              ] || {
+                optionsMap: {},
+                specificComposition: {},
+              };
+              optionsPaddingArrayMap[argIndex].optionsMap[option] = true;
+            }
+            alreadyVisitedOptionsMap[argIndex] = true;
           }
-          alreadyVisitedOptionsMap[argIndex] = true;
+        } else {
+          // Function or array of functions to compose eventually prepended
+          // with an optional options padding array.
+          if (possibleFnIsArray) {
+            // Array of functions to compose.
+            const fns = [];
+            for (let j = 0; j < possibleFn.length; j++) {
+              const innerCompositionPossibleFn = possibleFn[j];
+              if (j === 0 && isArray(innerCompositionPossibleFn)) {
+                // Options padding array (it's always the first and it's an array).
+                if (
+                  !alreadyVisitedCompositionOfFunctionsOptionsMap[
+                    `${argIndex}.${i}`
+                  ]
+                ) {
+                  const options = innerCompositionPossibleFn;
+                  for (const option of options) {
+                    optionsPaddingArrayMap[argIndex] = optionsPaddingArrayMap[
+                      argIndex
+                    ] || {
+                      optionsMap: {},
+                      specificComposition: {},
+                    };
+                    optionsPaddingArrayMap[argIndex].specificComposition[i] =
+                      optionsPaddingArrayMap[argIndex].specificComposition[
+                        i
+                      ] || {
+                        optionsMap: {},
+                      };
+                    optionsPaddingArrayMap[argIndex].specificComposition[
+                      i
+                    ].optionsMap[option] = true;
+                  }
+                  alreadyVisitedCompositionOfFunctionsOptionsMap[
+                    `${argIndex}.${i}`
+                  ] = true;
+                }
+              } else {
+                // Function.
+                fns.push(innerCompositionPossibleFn);
+              }
+            }
+            // Composition of functions.
+            // Push to stack.
+            const node = {
+              fns,
+              argIndex,
+              index: i,
+            };
+            stack.push({
+              node,
+              path: path.concat([node]),
+            });
+          } else {
+            // Function.
+            // Push to stack.
+            const node = {
+              fns: [possibleFn],
+              argIndex,
+              index: i,
+            };
+            stack.push({
+              node,
+              path: path.concat([node]),
+            });
+          }
+        }
+      }
+    };
+
+    const hasOption = (optionCode, argIndex, index) => {
+      return hasNestedPropertyValue(
+        optionsPaddingArrayMap,
+        typeof index === "undefined"
+          ? [argIndex, "optionsMap", optionCode]
+          : [argIndex, "specificComposition", index, "optionsMap", optionCode]
+      );
+    };
+
+    const composeRes = path =>
+      compose(...path.flatMap(node => node.fns))(...params);
+
+    addToStack(0);
+    while (stack.length) {
+      const current = stack.pop();
+      const currentPath = current.path;
+      if (currentPath.length === l) {
+        const optionals = [];
+        for (let i = 0; i < currentPath.length; i++) {
+          const currentPathNode = currentPath[i];
+          if (
+            hasOption(
+              cartesianComposition.OPTIONAL,
+              currentPathNode.argIndex
+            ) ||
+            hasOption(
+              cartesianComposition.OPTIONAL,
+              currentPathNode.argIndex,
+              currentPathNode.index
+            )
+          ) {
+            optionals.push(i);
+          }
+        }
+        const compositionRes = composeRes(currentPath);
+        ret.push(compositionRes);
+        const optionalsCombinations =
+          yieldUniqueProgressiveIncrementalCombinations(optionals);
+        for (const optionalsCombination of optionalsCombinations) {
+          const path = currentPath.filter(
+            node => optionalsCombination.indexOf(node.argIndex) === -1
+          );
+          const keys = [path.length].concat(
+            path.flatMap(node => [node.argIndex, node.index])
+          );
+          if (!hasNestedPropertyValue(alreadyComposedPathsMap, keys)) {
+            const compositionRes = composeRes(path);
+            ret.push(compositionRes);
+            setNestedPropertyValue(alreadyComposedPathsMap, keys, true);
+          }
         }
       } else {
-        // Function or array of functions to compose eventually prepended
-        // with an optional options padding array.
-        if (possibleFnIsArray) {
-          // Array of functions to compose.
-          const fns = [];
-          for (let j = 0; j < possibleFn.length; j++) {
-            const innerCompositionPossibleFn = possibleFn[j];
-            if (j === 0 && isArray(innerCompositionPossibleFn)) {
-              // Options padding array (it's always the first and it's an array).
-              if (
-                !alreadyVisitedCompositionOfFunctionsOptionsMap[
-                  `${argIndex}.${i}`
-                ]
-              ) {
-                const options = innerCompositionPossibleFn;
-                for (const option of options) {
-                  optionsPaddingArrayMap[argIndex] = optionsPaddingArrayMap[
-                    argIndex
-                  ] || {
-                    optionsMap: {},
-                    specificComposition: {}
-                  };
-                  optionsPaddingArrayMap[argIndex].specificComposition[
-                    i
-                  ] = optionsPaddingArrayMap[argIndex].specificComposition[
-                    i
-                  ] || {
-                    optionsMap: {}
-                  };
-                  optionsPaddingArrayMap[argIndex].specificComposition[
-                    i
-                  ].optionsMap[option] = true;
-                }
-                alreadyVisitedCompositionOfFunctionsOptionsMap[
-                  `${argIndex}.${i}`
-                ] = true;
-              }
-            } else {
-              // Function.
-              fns.push(innerCompositionPossibleFn);
-            }
-          }
-          // Composition of functions.
-          // Push to stack.
-          const node = {
-            fns,
-            argIndex,
-            index: i
-          };
-          stack.push({
-            node,
-            path: path.concat([node])
-          });
-        } else {
-          // Function.
-          // Push to stack.
-          const node = {
-            fns: [possibleFn],
-            argIndex,
-            index: i
-          };
-          stack.push({
-            node,
-            path: path.concat([node])
-          });
-        }
+        const nextIndex = current.node.argIndex + 1;
+        addToStack(nextIndex, currentPath);
       }
     }
+
+    return ret;
   };
-
-  const hasOption = (optionCode, argIndex, index) => {
-    return hasNestedPropertyValue(
-      optionsPaddingArrayMap,
-      typeof index === "undefined"
-        ? [argIndex, "optionsMap", optionCode]
-        : [argIndex, "specificComposition", index, "optionsMap", optionCode]
-    );
-  };
-
-  const composeRes = path =>
-    compose(...path.flatMap(node => node.fns))(...params);
-
-  addToStack(0);
-  while (stack.length) {
-    const current = stack.pop();
-    const currentPath = current.path;
-    if (currentPath.length === l) {
-      const optionals = [];
-      for (let i = 0; i < currentPath.length; i++) {
-        const currentPathNode = currentPath[i];
-        if (
-          hasOption(cartesianComposition.OPTIONAL, currentPathNode.argIndex) ||
-          hasOption(
-            cartesianComposition.OPTIONAL,
-            currentPathNode.argIndex,
-            currentPathNode.index
-          )
-        ) {
-          optionals.push(i);
-        }
-      }
-      const compositionRes = composeRes(currentPath);
-      ret.push(compositionRes);
-      const optionalsCombinations = yieldUniqueProgressiveIncrementalCombinations(
-        optionals
-      );
-      for (const optionalsCombination of optionalsCombinations) {
-        const path = currentPath.filter(
-          node => optionalsCombination.indexOf(node.argIndex) === -1
-        );
-        const keys = [path.length].concat(
-          path.flatMap(node => [node.argIndex, node.index])
-        );
-        if (!hasNestedPropertyValue(alreadyComposedPathsMap, keys)) {
-          const compositionRes = composeRes(path);
-          ret.push(compositionRes);
-          setNestedPropertyValue(alreadyComposedPathsMap, keys, true);
-        }
-      }
-    } else {
-      const nextIndex = current.node.argIndex + 1;
-      addToStack(nextIndex, currentPath);
-    }
-  }
-
-  return ret;
-};
 
 /**
  * @type {number}
