@@ -1,6 +1,6 @@
 {
   "name": "cartesian-composition",
-  "version": "1.14.0",
+  "version": "1.15.0",
   "description": "A higher order function to compose functions through cartesian composition.",
   "keywords": [
     "composition",
